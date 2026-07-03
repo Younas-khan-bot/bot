@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  HOST
+  ADMIN
+}
+
+enum TxType {
+  PURCHASE // coins bought with real money via Google Play
+  CALL_SPEND // coins spent by a caller during a call
+  CALL_EARN // coins earned by a host during a call
+  WITHDRAWAL // coins cashed out by a host
+  ADJUSTMENT // manual admin adjustment
+}
+
+enum CallStatus {
+  REQUESTED
+  ACCEPTED
+  ONGOING
+  ENDED
+  REJECTED
+  MISSED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  wallet       Wallet?
+  hostProfile  HostProfile?
+  transactions CoinTransaction[]
+  iapReceipts  IapReceipt[]
+
+  callsMade     Call[] @relation("CallerCalls")
+  callsReceived Call[] @relation("HostCalls")
+}
+
+model Wallet {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  coinBalance Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
+model CoinTransaction {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  type         TxType
+  amount       Int // positive = credit, negative = debit
+  balanceAfter Int
+  callId       String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model IapReceipt {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  productId     String
+  purchaseToken String   @unique
+  orderId       String?
+  coinsCredited Int
+  createdAt     DateTime @default(now())
+}
+
+model HostProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  bio              String?
+  ratePerMinute    Int      @default(10) // coins per minute of video call
+  isOnline         Boolean  @default(false)
+  isApproved       Boolean  @default(false)
+  totalEarnedCoins Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  withdrawals WithdrawalRequest[]
+}
+
+model Call {
+  id             String     @id @default(uuid())
+  callerId       String
+  caller         User       @relation("CallerCalls", fields: [callerId], references: [id])
+  hostId         String
+  host           User       @relation("HostCalls", fields: [hostId], references: [id])
+  status         CallStatus @default(REQUESTED)
+  ratePerMinute  Int
+  startedAt      DateTime?
+  endedAt        DateTime?
+  durationSeconds Int       @default(0)
+  coinsSpent     Int        @default(0)
+  endReason      String?
+  createdAt      DateTime   @default(now())
+
+  @@index([callerId])
+  @@index([hostId])
+}
+
+model WithdrawalRequest {
+  id            String            @id @default(uuid())
+  hostId        String
+  hostProfile   HostProfile       @relation(fields: [hostId], references: [id])
+  coinsAmount   Int
+  status        WithdrawalStatus  @default(PENDING)
+  createdAt     DateTime          @default(now())
+  processedAt   DateTime?
+  note          String?
+}

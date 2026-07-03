@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: videochat
+      POSTGRES_PASSWORD: videochat
+      POSTGRES_DB: videochat
+    ports:
+      - '5432:5432'
+    volumes:
+      - videochat_pgdata:/var/lib/postgresql/data
+
+volumes:
+  videochat_pgdata:

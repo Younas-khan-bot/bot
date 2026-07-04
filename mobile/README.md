@@ -20,14 +20,47 @@ you'll need to add that IP to `android/app/src/main/res/xml/network_security_con
 too since cleartext HTTP is blocked everywhere else by design.
 
 Run it (requires Android Studio + SDK + an emulator or a device with USB
-debugging enabled — **this repo was built without an Android SDK available,
-so none of this has been run on a real emulator; expect to debug the first
-build**):
+debugging enabled):
 
 ```bash
 npx react-native start        # Metro bundler, in one terminal
 npx react-native run-android  # in another terminal
 ```
+
+**This has been verified to build and produce a working, installable debug
+APK** (`android/app/build/outputs/apk/debug/app-debug.apk` after
+`./gradlew assembleDebug`) using a manually-installed Android SDK/NDK/CMake
+and the system Gradle, since no Android Studio was available in the build
+environment. A few real fixes were needed along the way and are already
+applied in this repo:
+
+- `react-native-gesture-handler` is pinned to `2.16.2` — newer 2.2x/2.3x
+  releases need codegen features RN 0.74's toolchain doesn't produce, and
+  fail with "Cannot access 'ViewManagerWithGeneratedInterface'".
+- `compileSdk`/`targetSdk` are 35 and AGP is bumped to 8.6.0 (see
+  `android/build.gradle`) because a transitive `androidx.core:core:1.16.0`
+  dependency requires it; `androidx.core` is also pinned via
+  `resolutionStrategy.force` as a safety net.
+- `app/build.gradle` sets `missingDimensionStrategy 'store', 'play'`
+  because `react-native-iap` ships separate Google Play/Amazon Appstore
+  build flavors and Gradle can't pick one on its own.
+- `settings.gradle` / `app/build.gradle` use the real RN 0.74 autolinking
+  mechanism (`native_modules.gradle`'s `applyNativeModulesSettingsGradle`/
+  `applyNativeModulesAppBuildGradle`) — RN 0.75+ tutorials online show a
+  different `com.facebook.react.settings` plugin API that doesn't exist yet
+  in 0.74's gradle plugin.
+
+If your build environment sits behind a corporate proxy/VPN that injects a
+`JAVA_TOOL_OPTIONS` environment variable (common in locked-down corporate
+Windows setups), watch out for this: every `java` subprocess prints a
+harmless "Picked up JAVA_TOOL_OPTIONS: ..." notice to stderr when that
+variable is set, and Android Gradle Plugin's prefab (native library) step
+misreads *any* stderr output from its worker process as a hard failure —
+surfacing as a baffling `[CXX1210] No compatible library found` error from
+`react-native-screens`' CMake build that has nothing to do with libraries
+at all. If you hit that exact error, check whether `JAVA_TOOL_OPTIONS` is
+set in your shell; if so, move those flags to `GRADLE_OPTS` instead and
+unset `JAVA_TOOL_OPTIONS` before running Gradle.
 
 ## What's implemented
 
@@ -50,11 +83,12 @@ npx react-native run-android  # in another terminal
 This is a functional MVP scaffold, not a submitted app. Concretely still
 needed:
 
-1. **Run it on a real device/emulator and fix whatever breaks.** No Android
-   SDK was available while building this, so the native build has not been
-   executed even once. Expect at least some Gradle/native-linking
-   friction on the first `run-android` — that's normal for a from-scratch
-   RN + WebRTC + IAP project, not a sign the code is wrong.
+1. **Install the debug APK on a real device and click through every screen.**
+   The build itself is verified working (see above), but no one has actually
+   used the app yet — register/login, buy a coin package (will fail until
+   Play Billing products exist, see #5), browse hosts, and make a test call
+   between two accounts need a human pass before you'd trust this in front
+   of real users.
 2. **Real app icon** — `android/app/src/main/res/mipmap-*/ic_launcher*.png`
    are solid-color placeholders right now. Replace with real launcher icons
    (use Android Studio's Image Asset tool, or any adaptive-icon generator).

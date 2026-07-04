@@ -3,11 +3,13 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 react {
-    autolinkLibrariesWithApp()
+    // Autolinking of native modules (react-native-webrtc, react-native-iap,
+    // etc.) is wired up in settings.gradle + the native_modules.gradle
+    // apply below, not through this block.
 }
 
 def enableProguardInReleaseBuilds = true
-def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -21,6 +23,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        // react-native-iap ships separate Google Play / Amazon Appstore
+        // flavors; this app only targets the Play Store.
+        missingDimensionStrategy 'store', 'play'
     }
     signingConfigs {
         debug {
@@ -66,3 +71,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

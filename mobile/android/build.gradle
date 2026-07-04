@@ -1,9 +1,9 @@
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"
+        buildToolsVersion = "35.0.0"
         minSdkVersion = 24
-        compileSdkVersion = 34
-        targetSdkVersion = 34
+        compileSdkVersion = 35
+        targetSdkVersion = 35
         kotlinVersion = "1.9.24"
         ndkVersion = "26.1.10909125"
     }
@@ -23,6 +23,17 @@ allprojects {
         google()
         mavenCentral()
         maven { url "$rootDir/../node_modules/react-native/android" }
+    }
+    // A transitive dependency (pulled in by one of the native modules) wants
+    // androidx.core 1.16.0, which needs AGP 8.6+/compileSdk 35 (already set
+    // above). Pinning it down avoids depending on exactly that AAR-metadata
+    // floor in case a future dependency bump raises it further than this
+    // project's AGP version supports.
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.core:core:1.13.1'
+            force 'androidx.core:core-ktx:1.13.1'
+        }
     }
 }
 

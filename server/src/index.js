@@ -13,6 +13,7 @@ const walletRoutes = require('./routes/wallet.routes');
 const hostsRoutes = require('./routes/hosts.routes');
 const callsRoutes = require('./routes/calls.routes');
 const withdrawalsRoutes = require('./routes/withdrawals.routes');
+const moderationRoutes = require('./routes/moderation.routes');
 
 const app = express();
 app.use(helmet());
@@ -26,6 +27,7 @@ app.use('/wallet', walletRoutes);
 app.use('/hosts', hostsRoutes);
 app.use('/calls', callsRoutes);
 app.use('/withdrawals', withdrawalsRoutes);
+app.use('/moderation', moderationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

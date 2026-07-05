@@ -11,14 +11,21 @@ react {
 def enableProguardInReleaseBuilds = true
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+// Load release signing config from android/keystore.properties if present.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.videochatapp"
+    namespace "com.starcalllive.app"
     defaultConfig {
-        applicationId "com.videochatapp"
+        applicationId "com.starcalllive.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -35,14 +42,14 @@ android {
             keyPassword 'android'
         }
         release {
-            // Fill these in (or better, pass via -P / env vars / a local
-            // keystore.properties file that is NOT committed to git) before
-            // building a release AAB/APK for the Play Store. See mobile/README.md.
-            if (project.hasProperty('VIDEOCHAT_UPLOAD_STORE_FILE')) {
-                storeFile file(VIDEOCHAT_UPLOAD_STORE_FILE)
-                storePassword VIDEOCHAT_UPLOAD_STORE_PASSWORD
-                keyAlias VIDEOCHAT_UPLOAD_KEY_ALIAS
-                keyPassword VIDEOCHAT_UPLOAD_KEY_PASSWORD
+            // Reads android/keystore.properties (see that file). Falls back to
+            // the debug key only if the properties file is missing, so a plain
+            // checkout still builds.
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
             }
         }
     }
@@ -51,7 +58,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig project.hasProperty('VIDEOCHAT_UPLOAD_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }

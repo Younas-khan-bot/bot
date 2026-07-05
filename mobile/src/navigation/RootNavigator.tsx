@@ -9,6 +9,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import WalletScreen from '../screens/WalletScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import CallScreen from '../screens/CallScreen';
 import { Host, IceServer } from '../types';
 
@@ -21,9 +22,11 @@ export type AppStackParamList = {
   Home: undefined;
   Wallet: undefined;
   Profile: undefined;
+  BlockedUsers: undefined;
   Call: {
     callId: string;
     role: 'caller' | 'host';
+    peerId: string;
     peer: { displayName: string; avatarUrl?: string | null };
     iceServers?: IceServer[];
   };
@@ -75,6 +78,7 @@ function AppNavigator() {
                 navRef.current?.navigate('Call', {
                   callId: incomingCall.callId,
                   role: 'host',
+                  peerId: incomingCall.caller.id,
                   peer: incomingCall.caller,
                   iceServers: ack.iceServers,
                 });
@@ -92,6 +96,11 @@ function AppNavigator() {
         <AppStack.Screen name="Home" component={HomeScreen} options={{ title: 'Hosts' }} />
         <AppStack.Screen name="Wallet" component={WalletScreen} options={{ title: 'Wallet' }} />
         <AppStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+        <AppStack.Screen
+          name="BlockedUsers"
+          component={BlockedUsersScreen}
+          options={{ title: 'Blocked users' }}
+        />
         <AppStack.Screen
           name="Call"
           component={CallScreen}

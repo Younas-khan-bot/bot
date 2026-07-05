@@ -2,7 +2,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Host } from '../types';
 
-export default function HostCard({ host, onCall }: { host: Host; onCall: (host: Host) => void }) {
+export default function HostCard({
+  host,
+  onCall,
+  onModerate,
+}: {
+  host: Host;
+  onCall: (host: Host) => void;
+  onModerate?: (host: Host) => void;
+}) {
   return (
     <View style={styles.card}>
       <View style={styles.avatarWrap}>
@@ -27,6 +35,14 @@ export default function HostCard({ host, onCall }: { host: Host; onCall: (host: 
       <TouchableOpacity style={styles.callButton} onPress={() => onCall(host)}>
         <Text style={styles.callButtonText}>Call</Text>
       </TouchableOpacity>
+      {onModerate ? (
+        <TouchableOpacity
+          style={styles.moreButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={() => onModerate(host)}>
+          <Text style={styles.moreIcon}>⋮</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -66,4 +82,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   callButtonText: { color: '#fff', fontWeight: '700' },
+  moreButton: { paddingHorizontal: 6, paddingVertical: 4, marginLeft: 4 },
+  moreIcon: { color: '#8b8b9a', fontSize: 22, fontWeight: '700' },
 });

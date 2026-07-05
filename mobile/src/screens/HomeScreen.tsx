@@ -15,6 +15,7 @@ import { apiClient, apiErrorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import HostCard from '../components/HostCard';
+import { showModerationMenu } from '../api/moderation';
 import { Host } from '../types';
 import type { AppStackParamList } from '../navigation/RootNavigator';
 
@@ -79,6 +80,7 @@ export default function HomeScreen({ navigation }: Props) {
           navigation.navigate('Call', {
             callId: ack.callId,
             role: 'caller',
+            peerId: host.hostId,
             peer: { displayName: host.displayName, avatarUrl: host.avatarUrl },
           });
         }
@@ -112,7 +114,19 @@ export default function HomeScreen({ navigation }: Props) {
         ListEmptyComponent={
           <Text style={styles.empty}>No hosts online right now. Pull to refresh.</Text>
         }
-        renderItem={({ item }) => <HostCard host={item} onCall={callHost} />}
+        renderItem={({ item }) => (
+          <HostCard
+            host={item}
+            onCall={callHost}
+            onModerate={(host) =>
+              showModerationMenu({
+                userId: host.hostId,
+                displayName: host.displayName,
+                onBlocked: loadHosts,
+              })
+            }
+          />
+        )}
       />
       {callingHostId && (
         <View style={styles.callingOverlay}>

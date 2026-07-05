@@ -37,6 +37,13 @@ enum WithdrawalStatus {
   PAID
 }
 
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -132,4 +139,35 @@ model WithdrawalRequest {
   createdAt   DateTime         @default(now())
   processedAt DateTime?
   note        String?
+}
+
+// A user blocking another user. Blocked users are hidden from each other in
+// host discovery and cannot start calls with each other. Required by Google
+// Play for apps with user-to-user interaction.
+model UserBlock {
+  id            String   @id @default(uuid())
+  blockerUserId String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockerUserId])
+  @@index([blockedUserId])
+}
+
+// A report filed by one user against another (optionally tied to a call).
+// Reviewed by an admin. Required by Google Play so users can flag abuse.
+model UserReport {
+  id             String       @id @default(uuid())
+  reporterUserId String
+  reportedUserId String
+  callId         String?
+  reason         String
+  details        String?
+  status         ReportStatus @default(OPEN)
+  createdAt      DateTime     @default(now())
+  reviewedAt     DateTime?
+
+  @@index([reportedUserId])
+  @@index([status])
 }

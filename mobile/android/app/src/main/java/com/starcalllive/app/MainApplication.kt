@@ -1,4 +1,4 @@
-package com.videochatapp
+package com.starcalllive.app
 
 import android.app.Application
 import com.facebook.react.PackageList

@@ -2,6 +2,7 @@ const express = require('express');
 const { z } = require('zod');
 const { prisma } = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { blockedUserIdsFor } = require('./moderation.routes');
 
 const router = express.Router();
 
@@ -19,10 +20,14 @@ function serializeHost(hostProfile) {
 // Public-ish list of approved, online hosts available for a call.
 router.get('/', requireAuth, async (req, res) => {
   const onlineOnly = req.query.online !== 'false';
+  // Hide hosts the caller has blocked (or who blocked the caller), in either
+  // direction, so blocked users never surface to each other.
+  const blocked = await blockedUserIdsFor(req.user.id);
   const hosts = await prisma.hostProfile.findMany({
     where: {
       isApproved: true,
       ...(onlineOnly ? { isOnline: true } : {}),
+      ...(blocked.size ? { userId: { notIn: [...blocked] } } : {}),
     },
     include: { user: true },
     orderBy: { updatedAt: 'desc' },

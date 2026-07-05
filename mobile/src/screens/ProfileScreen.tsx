@@ -9,9 +9,13 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { apiClient, apiErrorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { PRIVACY_POLICY_URL, TERMS_URL } from '../config/env';
+import type { AppStackParamList } from '../navigation/RootNavigator';
 
 interface HostProfile {
   bio: string | null;
@@ -21,7 +25,9 @@ interface HostProfile {
   totalEarnedCoins: number;
 }
 
-export default function ProfileScreen() {
+type Props = NativeStackScreenProps<AppStackParamList, 'Profile'>;
+
+export default function ProfileScreen({ navigation }: Props) {
   const { user, logout, refreshUser } = useAuth();
   const [hostProfile, setHostProfile] = useState<HostProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,6 +176,22 @@ export default function ProfileScreen() {
         </View>
       )}
 
+      <View style={styles.divider} />
+
+      <Text style={styles.sectionTitle}>Safety &amp; legal</Text>
+      <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('BlockedUsers')}>
+        <Text style={styles.linkText}>Blocked users</Text>
+        <Text style={styles.chevron}>›</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+        <Text style={styles.linkText}>Privacy Policy</Text>
+        <Text style={styles.chevron}>›</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.linkRow} onPress={() => Linking.openURL(TERMS_URL)}>
+        <Text style={styles.linkText}>Terms of Service</Text>
+        <Text style={styles.chevron}>›</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={logout}>
         <Text style={styles.buttonText}>Log out</Text>
       </TouchableOpacity>
@@ -215,4 +237,16 @@ const styles = StyleSheet.create({
   rowValue: { color: '#fff', fontWeight: '600' },
   pillOk: { color: '#22c55e', fontWeight: '700' },
   pillPending: { color: '#f59e0b', fontWeight: '700' },
+  linkRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1c1c2e',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 10,
+  },
+  linkText: { color: '#c9c9d6', fontSize: 15 },
+  chevron: { color: '#8b8b9a', fontSize: 20 },
 });

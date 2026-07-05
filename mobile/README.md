@@ -1,10 +1,10 @@
-# VideoChatApp (Android)
+# StarCallLive (Android)
 
 React Native app for the video chat + coins product: sign up/login, buy coin
 packs via Google Play Billing, browse online "hosts", and make WebRTC video
 calls that are billed per minute against the caller's coin balance.
 
-Pairs with the backend in `../server`.
+Application ID: `com.starcalllive.app`. Pairs with the backend in `../server`.
 
 ## Setup
 
@@ -78,70 +78,68 @@ unset `JAVA_TOOL_OPTIONS` before running Gradle.
   mic/camera toggle. Coin balance updates in near-real-time as the backend
   bills per minute.
 
-## Before you can actually publish this to Google Play
+## Release build (signed AAB)
 
-This is a functional MVP scaffold, not a submitted app. Concretely still
-needed:
+Release signing reads `android/keystore.properties`, which points at
+`android/app/upload-keystore.jks`. Both are committed to this **private**
+repo on purpose: the app is only ever built in an ephemeral cloud
+environment, so the signing key has to persist here or future updates could
+never be signed. Google Play App Signing is enabled, so this is the *upload*
+key (resettable in the Play Console if it's ever compromised).
 
-1. **Install the debug APK on a real device and click through every screen.**
-   The build itself is verified working (see above), but no one has actually
-   used the app yet — register/login, buy a coin package (will fail until
-   Play Billing products exist, see #5), browse hosts, and make a test call
-   between two accounts need a human pass before you'd trust this in front
-   of real users.
-2. **Real app icon** — `android/app/src/main/res/mipmap-*/ic_launcher*.png`
-   are solid-color placeholders right now. Replace with real launcher icons
-   (use Android Studio's Image Asset tool, or any adaptive-icon generator).
-3. **Application ID** — `com.videochatapp` in `android/app/build.gradle`
-   (`applicationId`) and `android/app/src/main/java/com/videochatapp/*` is a
-   placeholder. Rename to your real reverse-domain package before release
-   (Android Studio's "Refactor > Rename Package" handles this cleanly).
-4. **Release signing key**. Generate one:
-   ```bash
-   keytool -genkeypair -v -keystore videochat-release.keystore \
-     -alias videochat -keyalg RSA -keysize 2048 -validity 10000
-   ```
-   Keep it and its passwords out of git. Build with:
-   ```bash
-   ./gradlew bundleRelease \
-     -PVIDEOCHAT_UPLOAD_STORE_FILE=/absolute/path/videochat-release.keystore \
-     -PVIDEOCHAT_UPLOAD_STORE_PASSWORD=... \
-     -PVIDEOCHAT_UPLOAD_KEY_ALIAS=videochat \
-     -PVIDEOCHAT_UPLOAD_KEY_PASSWORD=...
-   ```
-   (or Play App Signing, which is the option Google recommends and shows
-   during your first upload — you can let Google manage the signing key
-   instead of self-managing one).
-5. **Google Play Billing products** must exist in Play Console before coin
-   purchases work at all — see `../server/README.md`'s Billing section.
-6. **A deployed, HTTPS backend.** `src/config/env.ts`'s production branch
-   points at a placeholder domain; update it once `server/` is deployed.
-7. **A TURN server for production** (see `../server/README.md`) — without
-   one, calls between two users on restrictive networks (mobile data,
-   corporate wifi) will frequently fail to connect.
-8. **Privacy Policy URL** — required by Play Console for any app requesting
-   camera/microphone, and especially for one handling in-app purchases.
-   Must disclose camera/mic use, what call data you retain, and your coin
-   refund policy.
-9. **Play Console "paid host" / marketplace policy review.** An app where
-   users pay coins to video call other individual users is squarely inside
-   Google Play's higher-scrutiny categories:
-   - **Live-streaming / video-chat content policy** — requires an in-app
-     reporting/blocking mechanism for abusive users (not yet built here —
-     the backend has no report/block/ban endpoints yet) and a moderation
-     process for hosts.
-   - **User-generated content policy** — same reporting requirement.
-   - **Financial features** — since hosts cash out coins for real money,
-     depending on your jurisdiction this can trigger money-transmitter /
-     payment-facilitator obligations. Talk to a lawyer before enabling real
-     payouts; the withdrawal flow in this codebase intentionally stops at
-     "admin marks it paid" and does not move real money anywhere.
-   - Expect a **manual Google review** (sometimes multiple rounds) before
-     approval, and budget time for it separately from engineering time.
-10. **Age gate / content rating.** Random or paid video chat with strangers
-    is typically rated for mature audiences and Play Console will ask
-    detailed content-rating questionnaire questions about it.
+Build the AAB you upload to Play:
 
-None of the above is optional if the goal is "live on the Play Store" — the
-code in this repo gets you a working product to test and iterate on, but
-the policy/compliance items are the long pole for this category of app.
+```bash
+cd android
+# If the environment sets JAVA_TOOL_OPTIONS (e.g. a proxy injects SSL/proxy
+# flags), unset it and pass those flags via GRADLE_OPTS instead — otherwise
+# AGP's CMake step fails with "[CXX1210] No compatible library found" because
+# it misreads the "Picked up JAVA_TOOL_OPTIONS" stderr notice as an error.
+GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx3g $JAVA_TOOL_OPTIONS" \
+  JAVA_TOOL_OPTIONS= \
+  ANDROID_HOME=/opt/android-sdk \
+  gradle :app:bundleRelease --no-daemon
+# → app/build/outputs/bundle/release/app-release.aab
+```
+
+The release build bundles JS automatically with `__DEV__=false`, so the app
+talks to the production Railway backend (`src/config/env.ts`).
+
+## Play Store readiness — status
+
+Done and in this repo:
+
+- ✅ **Application ID** renamed to `com.starcalllive.app` (package, gradle,
+  manifest, native source).
+- ✅ **Release signing** configured (`keystore.properties` +
+  `upload-keystore.jks`), signed AAB builds.
+- ✅ **Deployed HTTPS backend** — `src/config/env.ts` points at the Railway
+  production URL for release builds.
+- ✅ **Report / block users** — required for this app category. In-app "⋮"
+  safety menu on the host list and an in-call ⚠️ button (report reasons +
+  block), a Blocked-users management screen, and server endpoints
+  (`/moderation/*`) that also hide blocked users from discovery and calls.
+- ✅ **Privacy Policy + Terms** — hosted in `../docs` (GitHub Pages) and
+  linked from the Profile screen. Enable Pages in repo Settings → Pages
+  (source: `main` branch, `/docs`) so the URLs in `src/config/env.ts`
+  resolve.
+
+Still needed before / during submission:
+
+1. **Real app icon** — `android/app/src/main/res/mipmap-*/ic_launcher*.png`
+   are solid-color placeholders. Replace with real launcher icons.
+2. **Google Play Billing products** must be created in Play Console with the
+   exact IDs `coins_100`, `coins_550`, `coins_1200`, `coins_2600`,
+   `coins_7000` before coin purchases work — see `../server/README.md`.
+3. **A TURN server for production** (see `../server/README.md`) — without
+   one, calls between users on restrictive networks (mobile data) frequently
+   fail to connect.
+4. **Content rating + data-safety form** — random/paid video chat with
+   strangers is rated mature; fill in the Play Console questionnaires.
+5. **Financial/legal** — hosts cashing out coins for real money can trigger
+   money-transmitter obligations depending on jurisdiction. The withdrawal
+   flow intentionally stops at "admin marks it paid" and moves no real money
+   until you wire a payout provider. Talk to a lawyer before enabling real
+   payouts.
+6. Expect a **manual Google review**, possibly multiple rounds, for this
+   category — budget time for it separately from engineering.

@@ -1,6 +1,7 @@
 const { verifyToken } = require('../utils/jwt');
 const { prisma } = require('../db');
 const { applyCoinDelta } = require('../services/coinLedger');
+const { blockedUserIdsFor } = require('../routes/moderation.routes');
 const { getIceServers } = require('./iceServers');
 const env = require('../env');
 
@@ -127,6 +128,12 @@ function registerSignaling(io) {
         }
         if (!onlineUsers.has(hostId)) {
           return ack?.({ error: 'Host is not connected' });
+        }
+
+        // Don't allow a call between users who have blocked each other.
+        const blocked = await blockedUserIdsFor(socket.userId);
+        if (blocked.has(hostId)) {
+          return ack?.({ error: 'This host is unavailable' });
         }
 
         const wallet = await prisma.wallet.findUnique({ where: { userId: socket.userId } });

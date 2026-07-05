@@ -11,6 +11,7 @@ import {
 } from 'react-native-webrtc';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { showModerationMenu } from '../api/moderation';
 import type { AppStackParamList } from '../navigation/RootNavigator';
 import { IceServer } from '../types';
 
@@ -21,7 +22,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Call'>;
 const DEFAULT_ICE: IceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
 
 export default function CallScreen({ route, navigation }: Props) {
-  const { callId, role, peer, iceServers: hostIceServers } = route.params;
+  const { callId, role, peerId, peer, iceServers: hostIceServers } = route.params;
   const { socket } = useSocket();
   const { refreshUser } = useAuth();
 
@@ -263,6 +264,20 @@ export default function CallScreen({ route, navigation }: Props) {
         </Text>
       </View>
 
+      <TouchableOpacity
+        style={styles.safetyButton}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        onPress={() =>
+          showModerationMenu({
+            userId: peerId,
+            displayName: peer.displayName,
+            callId,
+            onBlocked: () => endCall(),
+          })
+        }>
+        <Text style={styles.safetyIcon}>⚠️</Text>
+      </TouchableOpacity>
+
       <View style={styles.controls}>
         <TouchableOpacity style={styles.controlButton} onPress={toggleMic}>
           <Text style={styles.controlIcon}>{micEnabled ? '🎤' : '🔇'}</Text>
@@ -296,6 +311,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#222',
   },
   topBar: { position: 'absolute', top: 50, left: 16 },
+  safetyButton: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    backgroundColor: '#00000080',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  safetyIcon: { fontSize: 18 },
   timer: {
     color: '#fff',
     fontSize: 16,

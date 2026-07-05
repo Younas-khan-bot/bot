@@ -97,10 +97,11 @@
   }
 
   async function login() {
-    var email = document.getElementById('email').value.trim();
-    var password = document.getElementById('password').value;
-    document.getElementById('loginErr').textContent = '';
+    var errEl = document.getElementById('loginErr');
+    errEl.textContent = 'Logging in…';
     try {
+      var email = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
       var res = await fetch('/auth/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })

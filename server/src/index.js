@@ -23,10 +23,19 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Static legal pages (Privacy Policy / Terms) served straight from the API so
-// the required Play Store URLs work regardless of repo visibility:
-//   https://<host>/privacy.html   https://<host>/terms.html
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Static pages served straight from the API: legal pages + the admin dashboard.
+//   /privacy.html   /terms.html   /admin.html
+// HTML is served with no-cache so dashboard updates always load fresh (avoids
+// browsers pinning a stale admin page).
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
+  }),
+);
 
 app.use('/auth', authRoutes);
 app.use('/wallet', walletRoutes);

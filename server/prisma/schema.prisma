@@ -3,39 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  HOST
-  ADMIN
-}
-
-enum TxType {
-  PURCHASE // coins bought with real money via Google Play
-  CALL_SPEND // coins spent by a caller during a call
-  CALL_EARN // coins earned by a host during a call
-  WITHDRAWAL // coins cashed out by a host
-  ADJUSTMENT // manual admin adjustment
-}
-
-enum CallStatus {
-  REQUESTED
-  ACCEPTED
-  ONGOING
-  ENDED
-  REJECTED
-  MISSED
-}
-
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PAID
-}
+// Role values: USER | HOST | ADMIN
+// TxType values: PURCHASE | CALL_SPEND | CALL_EARN | WITHDRAWAL | ADJUSTMENT
+// CallStatus values: REQUESTED | ACCEPTED | ONGOING | ENDED | REJECTED | MISSED
+// WithdrawalStatus values: PENDING | APPROVED | REJECTED | PAID
 
 model User {
   id           String   @id @default(uuid())
@@ -43,7 +18,7 @@ model User {
   passwordHash String
   displayName  String
   avatarUrl    String?
-  role         Role     @default(USER)
+  role         String   @default("USER")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -68,11 +43,11 @@ model CoinTransaction {
   id           String   @id @default(uuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id])
-  type         TxType
-  amount       Int // positive = credit, negative = debit
+  type         String
+  amount       Int
   balanceAfter Int
   callId       String?
-  metadata     Json?
+  metadata     String?
   createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
@@ -94,7 +69,7 @@ model HostProfile {
   userId           String   @unique
   user             User     @relation(fields: [userId], references: [id])
   bio              String?
-  ratePerMinute    Int      @default(10) // coins per minute of video call
+  ratePerMinute    Int      @default(10)
   isOnline         Boolean  @default(false)
   isApproved       Boolean  @default(false)
   totalEarnedCoins Int      @default(0)
@@ -105,31 +80,31 @@ model HostProfile {
 }
 
 model Call {
-  id             String     @id @default(uuid())
-  callerId       String
-  caller         User       @relation("CallerCalls", fields: [callerId], references: [id])
-  hostId         String
-  host           User       @relation("HostCalls", fields: [hostId], references: [id])
-  status         CallStatus @default(REQUESTED)
-  ratePerMinute  Int
-  startedAt      DateTime?
-  endedAt        DateTime?
+  id              String    @id @default(uuid())
+  callerId        String
+  caller          User      @relation("CallerCalls", fields: [callerId], references: [id])
+  hostId          String
+  host            User      @relation("HostCalls", fields: [hostId], references: [id])
+  status          String    @default("REQUESTED")
+  ratePerMinute   Int
+  startedAt       DateTime?
+  endedAt         DateTime?
   durationSeconds Int       @default(0)
-  coinsSpent     Int        @default(0)
-  endReason      String?
-  createdAt      DateTime   @default(now())
+  coinsSpent      Int       @default(0)
+  endReason       String?
+  createdAt       DateTime  @default(now())
 
   @@index([callerId])
   @@index([hostId])
 }
 
 model WithdrawalRequest {
-  id            String            @id @default(uuid())
-  hostId        String
-  hostProfile   HostProfile       @relation(fields: [hostId], references: [id])
-  coinsAmount   Int
-  status        WithdrawalStatus  @default(PENDING)
-  createdAt     DateTime          @default(now())
-  processedAt   DateTime?
-  note          String?
+  id          String    @id @default(uuid())
+  hostId      String
+  hostProfile HostProfile @relation(fields: [hostId], references: [id])
+  coinsAmount Int
+  status      String    @default("PENDING")
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  note        String?
 }

@@ -13,6 +13,9 @@ module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: required('JWT_SECRET', 'dev-secret-change-me'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '30d',
+  // The account with this email is auto-promoted to ADMIN on login, so the
+  // owner can approve hosts from the admin dashboard without any DB surgery.
+  adminEmail: (process.env.ADMIN_EMAIL || '').toLowerCase(),
   hostPayoutPercent: parseInt(process.env.HOST_PAYOUT_PERCENT || '70', 10),
   googlePlayPackageName: process.env.GOOGLE_PLAY_PACKAGE_NAME || '',
   googleServiceAccountJsonPath: process.env.GOOGLE_SERVICE_ACCOUNT_JSON_PATH || '',

@@ -4,8 +4,18 @@ const { z } = require('zod');
 const { prisma } = require('../db');
 const { signToken } = require('../utils/jwt');
 const { requireAuth } = require('../middleware/auth');
+const env = require('../env');
 
 const router = express.Router();
+
+// Promote the configured owner account to ADMIN the first time it logs in, so
+// the owner can reach the admin dashboard without manual DB edits.
+async function ensureAdmin(user) {
+  if (env.adminEmail && user.email.toLowerCase() === env.adminEmail && user.role !== 'ADMIN') {
+    return prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
+  }
+  return user;
+}
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -60,7 +70,7 @@ router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -69,6 +79,8 @@ router.post('/login', async (req, res, next) => {
     if (!valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+
+    user = await ensureAdmin(user);
 
     const token = signToken(user);
     res.json({

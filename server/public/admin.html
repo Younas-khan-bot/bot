@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StarCallLive — Admin</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+         background: #0f0f1a; color: #e6e6ee; min-height: 100vh; }
+  header { padding: 18px 20px; background: #1c1c2e; display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 1.15rem; margin: 0; }
+  header .star { color: #FFB300; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px; }
+  .card { background: #1c1c2e; border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #33334a;
+          background: #12121f; color: #fff; margin-bottom: 10px; font-size: 1rem; }
+  button { border: none; border-radius: 10px; padding: 11px 16px; font-weight: 700; cursor: pointer;
+           font-size: .95rem; }
+  .btn-primary { background: #6d28d9; color: #fff; width: 100%; }
+  .btn-approve { background: #16a34a; color: #fff; }
+  .btn-reject { background: #3f1d1d; color: #ff8a8a; margin-left: 8px; }
+  .btn-ghost { background: #2f2f45; color: #cbd5e1; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .name { font-weight: 700; font-size: 1.05rem; }
+  .muted { color: #8b8b9a; font-size: .85rem; }
+  .rate { color: #a78bfa; font-weight: 600; font-size: .9rem; margin-top: 3px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab { flex: 1; text-align: center; padding: 10px; border-radius: 10px; background: #1c1c2e;
+         cursor: pointer; font-weight: 600; }
+  .tab.active { background: #6d28d9; color: #fff; }
+  .empty { text-align: center; color: #8b8b9a; padding: 30px 0; }
+  .hidden { display: none; }
+  .err { color: #ff8a8a; font-size: .9rem; margin-top: 6px; min-height: 1.1em; }
+  .badge { background: #7c2d12; color: #fdba74; border-radius: 6px; padding: 2px 8px; font-size: .75rem; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<header><span class="star">⭐</span><h1>StarCallLive Admin</h1></header>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="login" class="card">
+    <p class="muted" style="margin-top:0">Log in with your owner account (the email set as <code>ADMIN_EMAIL</code>).</p>
+    <input id="email" type="email" placeholder="Email" autocomplete="username" />
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+    <button class="btn-primary" onclick="login()">Log in</button>
+    <div id="loginErr" class="err"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="hidden">
+    <div class="toolbar">
+      <span class="muted">Signed in as <b id="who"></b></span>
+      <button class="btn-ghost" onclick="logout()">Log out</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" id="tab-hosts" onclick="showTab('hosts')">Pending hosts</div>
+      <div class="tab" id="tab-reports" onclick="showTab('reports')">Reports</div>
+    </div>
+    <div style="text-align:right;margin-bottom:8px">
+      <button class="btn-ghost" onclick="refresh()">↻ Refresh</button>
+    </div>
+    <div id="hosts"></div>
+    <div id="reports" class="hidden"></div>
+  </div>
+
+</div>
+<script>
+  var token = localStorage.getItem('sclAdminToken') || '';
+  var tab = 'hosts';
+
+  async function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    if (token) opts.headers.Authorization = 'Bearer ' + token;
+    var res = await fetch(path, opts);
+    if (res.status === 401 || res.status === 403) { logout(); throw new Error('Not authorized'); }
+    return res;
+  }
+
+  async function login() {
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+    document.getElementById('loginErr').textContent = '';
+    try {
+      var res = await fetch('/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (data.user.role !== 'ADMIN') throw new Error('This account is not an admin. Set ADMIN_EMAIL to this email on Railway, then log in again.');
+      token = data.token;
+      localStorage.setItem('sclAdminToken', token);
+      document.getElementById('who').textContent = data.user.displayName;
+      enterDash();
+    } catch (e) {
+      document.getElementById('loginErr').textContent = e.message;
+    }
+  }
+
+  function logout() {
+    token = ''; localStorage.removeItem('sclAdminToken');
+    document.getElementById('dash').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+  }
+
+  function enterDash() {
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('dash').classList.remove('hidden');
+    refresh();
+  }
+
+  function showTab(t) {
+    tab = t;
+    document.getElementById('tab-hosts').classList.toggle('active', t === 'hosts');
+    document.getElementById('tab-reports').classList.toggle('active', t === 'reports');
+    document.getElementById('hosts').classList.toggle('hidden', t !== 'hosts');
+    document.getElementById('reports').classList.toggle('hidden', t !== 'reports');
+    refresh();
+  }
+
+  function refresh() { tab === 'hosts' ? loadHosts() : loadReports(); }
+
+  async function loadHosts() {
+    var el = document.getElementById('hosts');
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    try {
+      var res = await api('/hosts/admin/pending');
+      var data = await res.json();
+      var list = data.hostProfiles || [];
+      if (!list.length) { el.innerHTML = '<div class="empty">No pending host applications 🎉</div>'; return; }
+      el.innerHTML = list.map(function (h) {
+        return '<div class="card"><div class="row"><div>' +
+          '<div class="name">' + esc(h.user.displayName) + '</div>' +
+          '<div class="muted">' + esc(h.user.email) + '</div>' +
+          (h.bio ? '<div class="muted">“' + esc(h.bio) + '”</div>' : '') +
+          '<div class="rate">🪙 ' + h.ratePerMinute + '/min</div>' +
+          '</div><div style="white-space:nowrap">' +
+          '<button class="btn-approve" onclick="approve(\'' + h.userId + '\')">Approve</button>' +
+          '<button class="btn-reject" onclick="reject(\'' + h.userId + '\')">Reject</button>' +
+          '</div></div></div>';
+      }).join('');
+    } catch (e) { el.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+  }
+
+  async function approve(id) {
+    await api('/hosts/admin/' + id + '/approve', { method: 'POST' });
+    loadHosts();
+  }
+  async function reject(id) {
+    if (!confirm('Reject this host application?')) return;
+    await api('/hosts/admin/' + id + '/reject', { method: 'POST' });
+    loadHosts();
+  }
+
+  async function loadReports() {
+    var el = document.getElementById('reports');
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    try {
+      var res = await api('/moderation/admin/reports?status=OPEN');
+      var data = await res.json();
+      var list = data.reports || [];
+      if (!list.length) { el.innerHTML = '<div class="empty">No open reports ✅</div>'; return; }
+      el.innerHTML = list.map(function (r) {
+        return '<div class="card">' +
+          '<div class="row"><span class="name">' + esc(r.reason) + '</span>' +
+          '<span class="badge">' + esc(r.status) + '</span></div>' +
+          '<div class="muted">Reported user: ' + esc(r.reportedUserId) + '</div>' +
+          (r.details ? '<div class="muted">“' + esc(r.details) + '”</div>' : '') +
+          '<div style="margin-top:10px">' +
+          '<button class="btn-reject" onclick="resolve(\'' + r.id + '\',\'ACTIONED\')">Ban / Action</button>' +
+          '<button class="btn-ghost" onclick="resolve(\'' + r.id + '\',\'DISMISSED\')" style="margin-left:8px">Dismiss</button>' +
+          '</div></div>';
+      }).join('');
+    } catch (e) { el.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+  }
+
+  async function resolve(id, status) {
+    await api('/moderation/admin/reports/' + id, { method: 'POST', body: JSON.stringify({ status: status }) });
+    loadReports();
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  // auto-enter if we already have a token
+  if (token) { enterDash(); }
+</script>
+</body>
+</html>

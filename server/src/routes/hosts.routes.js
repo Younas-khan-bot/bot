@@ -121,4 +121,15 @@ router.post('/admin/:userId/approve', requireAuth, requireRole('ADMIN'), async (
   }
 });
 
+// Reject a host application: remove the profile and take them offline. They
+// can re-apply later if they want.
+router.post('/admin/:userId/reject', requireAuth, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    await prisma.hostProfile.deleteMany({ where: { userId: req.params.userId } });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -17,7 +17,10 @@ const withdrawalsRoutes = require('./routes/withdrawals.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 
 const app = express();
-app.use(helmet());
+// Disable Helmet's default Content-Security-Policy: it sets `script-src 'self'`
+// + `script-src-attr 'none'`, which blocks the inline JS and onclick handlers
+// the admin dashboard (/admin.html) relies on. Other Helmet protections stay on.
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 

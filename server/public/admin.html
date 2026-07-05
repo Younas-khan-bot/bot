@@ -47,6 +47,22 @@
     <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
     <button class="btn-primary" onclick="login()">Log in</button>
     <div id="loginErr" class="err"></div>
+    <p class="muted" style="text-align:center;margin-bottom:0">
+      First time? <a href="#" style="color:#a78bfa" onclick="toggleReg(true);return false">Create your owner account</a>
+    </p>
+  </div>
+
+  <!-- REGISTER (first-time owner setup) -->
+  <div id="register" class="card hidden">
+    <p class="muted" style="margin-top:0">Create your owner account. Use the <b>same email</b> you set as <code>ADMIN_EMAIL</code> so it becomes the admin.</p>
+    <input id="regName" placeholder="Your name" />
+    <input id="regEmail" type="email" placeholder="Email" autocomplete="username" />
+    <input id="regPassword" type="password" placeholder="Password (min 8 characters)" autocomplete="new-password" />
+    <button class="btn-primary" onclick="register()">Create account &amp; log in</button>
+    <div id="regErr" class="err"></div>
+    <p class="muted" style="text-align:center;margin-bottom:0">
+      Already have an account? <a href="#" style="color:#a78bfa" onclick="toggleReg(false);return false">Log in</a>
+    </p>
   </div>
 
   <!-- DASHBOARD -->
@@ -104,7 +120,35 @@
   function logout() {
     token = ''; localStorage.removeItem('sclAdminToken');
     document.getElementById('dash').classList.add('hidden');
+    document.getElementById('register').classList.add('hidden');
     document.getElementById('login').classList.remove('hidden');
+  }
+
+  function toggleReg(show) {
+    document.getElementById('register').classList.toggle('hidden', !show);
+    document.getElementById('login').classList.toggle('hidden', show);
+  }
+
+  async function register() {
+    var displayName = document.getElementById('regName').value.trim();
+    var email = document.getElementById('regEmail').value.trim();
+    var password = document.getElementById('regPassword').value;
+    document.getElementById('regErr').textContent = '';
+    try {
+      var res = await fetch('/auth/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: displayName, email: email, password: password })
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create account');
+      if (data.user.role !== 'ADMIN') throw new Error('Account created, but it is not the admin. Set ADMIN_EMAIL=' + email + ' on Railway, then log in.');
+      token = data.token;
+      localStorage.setItem('sclAdminToken', token);
+      document.getElementById('who').textContent = data.user.displayName;
+      enterDash();
+    } catch (e) {
+      document.getElementById('regErr').textContent = e.message;
+    }
   }
 
   function enterDash() {

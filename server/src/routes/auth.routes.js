@@ -34,7 +34,7 @@ router.post('/register', async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
+    let user = await prisma.user.create({
       data: {
         email,
         passwordHash,
@@ -42,6 +42,8 @@ router.post('/register', async (req, res, next) => {
         wallet: { create: { coinBalance: 0 } },
       },
     });
+
+    user = await ensureAdmin(user);
 
     const token = signToken(user);
     res.status(201).json({

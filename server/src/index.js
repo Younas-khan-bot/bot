@@ -1,4 +1,5 @@
 const http = require('http');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -21,6 +22,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+// Static legal pages (Privacy Policy / Terms) served straight from the API so
+// the required Play Store URLs work regardless of repo visibility:
+//   https://<host>/privacy.html   https://<host>/terms.html
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/auth', authRoutes);
 app.use('/wallet', walletRoutes);

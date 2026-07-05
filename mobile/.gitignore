@@ -38,3 +38,6 @@ coverage/
 
 # Built APKs (not meant to live in git history)
 *.apk
+
+# Never commit signing keys
+*.jks

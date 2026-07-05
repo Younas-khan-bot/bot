@@ -119,10 +119,10 @@ Done and in this repo:
   safety menu on the host list and an in-call ⚠️ button (report reasons +
   block), a Blocked-users management screen, and server endpoints
   (`/moderation/*`) that also hide blocked users from discovery and calls.
-- ✅ **Privacy Policy + Terms** — hosted in `../docs` (GitHub Pages) and
-  linked from the Profile screen. Enable Pages in repo Settings → Pages
-  (source: `main` branch, `/docs`) so the URLs in `src/config/env.ts`
-  resolve.
+- ✅ **Privacy Policy + Terms** — served by the backend from
+  `../server/public` at `/(privacy|terms).html` and linked from the Profile
+  screen. Works regardless of GitHub repo visibility. URLs live in
+  `src/config/env.ts`.
 
 Still needed before / during submission:
 

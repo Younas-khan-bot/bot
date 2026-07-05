@@ -57,9 +57,20 @@ export default function HostGridCard({
       </View>
 
       <TouchableOpacity style={styles.callBtn} onPress={() => onCall(host)} activeOpacity={0.85}>
-        <Text style={styles.callIcon}>📹</Text>
+        <VideoCamIcon />
       </TouchableOpacity>
     </TouchableOpacity>
+  );
+}
+
+// A clean white camcorder glyph (rounded body + triangular lens), drawn with
+// Views so it renders crisply on every device — no emoji inconsistencies.
+function VideoCamIcon() {
+  return (
+    <View style={styles.vcam}>
+      <View style={styles.vcamBody} />
+      <View style={styles.vcamLens} />
+    </View>
   );
 }
 
@@ -93,18 +104,38 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 10,
     bottom: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#f97316',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff55',
     shadowColor: '#f97316',
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 4,
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  callIcon: { fontSize: 18 },
+  // camcorder icon
+  vcam: { flexDirection: 'row', alignItems: 'center' },
+  vcamBody: {
+    width: 15,
+    height: 13,
+    borderRadius: 4,
+    backgroundColor: '#fff',
+  },
+  vcamLens: {
+    width: 0,
+    height: 0,
+    marginLeft: 1.5,
+    borderTopWidth: 5,
+    borderBottomWidth: 5,
+    borderLeftWidth: 8,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderLeftColor: '#fff',
+  },
 });
 
 export { CARD_W, GAP };

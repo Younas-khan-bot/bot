@@ -10,7 +10,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Linking,
+  Image,
 } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { apiClient, apiErrorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -40,6 +42,36 @@ export default function ProfileScreen({ navigation }: Props) {
   const [age, setAge] = useState('');
   const [language, setLanguage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const uploadPhoto = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        includeBase64: true,
+        maxWidth: 900,
+        maxHeight: 900,
+        quality: 0.6,
+      });
+      if (result.didCancel || !result.assets?.length) return;
+      const asset = result.assets[0];
+      if (!asset.base64) {
+        Alert.alert('Error', 'Could not read that image. Try another one.');
+        return;
+      }
+      setUploadingPhoto(true);
+      await apiClient.post('/users/me/avatar', {
+        base64: asset.base64,
+        mime: asset.type ?? 'image/jpeg',
+      });
+      await refreshUser();
+      Alert.alert('Photo updated', 'Your profile photo has been saved.');
+    } catch (err) {
+      Alert.alert('Error', apiErrorMessage(err));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const load = async () => {
     try {
@@ -128,6 +160,28 @@ export default function ProfileScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+      <View style={styles.avatarSection}>
+        <TouchableOpacity onPress={uploadPhoto} activeOpacity={0.8}>
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarInitial}>
+                {user?.displayName?.charAt(0).toUpperCase() ?? '?'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.cameraBadge}>
+            <Text style={{ fontSize: 14 }}>{uploadingPhoto ? '⏳' : '📷'}</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={uploadPhoto} disabled={uploadingPhoto}>
+          <Text style={styles.uploadText}>
+            {uploadingPhoto ? 'Uploading…' : user?.avatarUrl ? 'Change photo' : 'Upload photo'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.name}>{user?.displayName}</Text>
       <Text style={styles.email}>{user?.email}</Text>
       <Text style={styles.balance}>🪙 {user?.coinBalance ?? 0} coins</Text>
@@ -240,8 +294,26 @@ export default function ProfileScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f1a' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f1a' },
-  name: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  email: { color: '#8b8b9a', marginTop: 4 },
+  avatarSection: { alignItems: 'center', marginBottom: 12 },
+  avatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#1c1c2e' },
+  avatarPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#6d28d9' },
+  avatarInitial: { color: '#fff', fontSize: 40, fontWeight: '800' },
+  cameraBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    backgroundColor: '#f97316',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#0f0f1a',
+  },
+  uploadText: { color: '#a78bfa', fontWeight: '600', marginTop: 8 },
+  name: { color: '#fff', fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  email: { color: '#8b8b9a', marginTop: 4, textAlign: 'center' },
   balance: { color: '#a78bfa', marginTop: 10, fontSize: 16, fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#1c1c2e', marginVertical: 20 },
   sectionTitle: { color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 6 },

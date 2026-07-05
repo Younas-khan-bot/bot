@@ -16,6 +16,7 @@ const callsRoutes = require('./routes/calls.routes');
 const withdrawalsRoutes = require('./routes/withdrawals.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const translateRoutes = require('./routes/translate.routes');
+const usersRoutes = require('./routes/users.routes');
 
 const app = express();
 // Disable Helmet's default Content-Security-Policy: it sets `script-src 'self'`
@@ -23,7 +24,7 @@ const app = express();
 // the admin dashboard (/admin.html) relies on. Other Helmet protections stay on.
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '8mb' })); // room for base64 profile photos
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
@@ -56,6 +57,7 @@ app.use('/calls', callsRoutes);
 app.use('/withdrawals', withdrawalsRoutes);
 app.use('/moderation', moderationRoutes);
 app.use('/translate', translateRoutes);
+app.use('/users', usersRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

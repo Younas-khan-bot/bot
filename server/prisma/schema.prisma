@@ -44,6 +44,16 @@ enum ReportStatus {
   DISMISSED
 }
 
+// Profile photo bytes stored in the DB (Railway's app filesystem is ephemeral,
+// so DB storage keeps avatars persistent without extra config). Served via
+// GET /users/:id/avatar.
+model Avatar {
+  userId    String   @id
+  mime      String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique

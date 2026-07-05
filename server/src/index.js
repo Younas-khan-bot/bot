@@ -26,6 +26,14 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+// Direct APK download link to share with hosts/testers. Forces a download with
+// the correct Android package mime type.
+app.get('/StarCallLive.apk', (req, res) => {
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', 'attachment; filename="StarCallLive.apk"');
+  res.sendFile(path.join(__dirname, '..', 'public', 'StarCallLive.apk'));
+});
+
 // Static pages served straight from the API: legal pages + the admin dashboard.
 //   /privacy.html   /terms.html   /admin.html
 // HTML is served with no-cache so dashboard updates always load fresh (avoids

@@ -228,6 +228,19 @@ function registerSignaling(io) {
       await endCall(io, callId, 'ENDED_BY_USER');
     });
 
+    // In-call text chat. Relayed to the other participant, who live-translates
+    // it to their own language on their device.
+    socket.on('chat:send', ({ callId, text }) => {
+      const clean = String(text || '').slice(0, 1000);
+      if (!clean.trim()) return;
+      socket.to(callRoom(callId)).emit('chat:message', {
+        callId,
+        fromUserId: socket.userId,
+        text: clean,
+        at: Date.now(),
+      });
+    });
+
     // Relay raw WebRTC signaling payloads between the two call participants.
     socket.on('webrtc:offer', ({ callId, sdp }) => {
       socket.to(callRoom(callId)).emit('webrtc:offer', { callId, sdp });

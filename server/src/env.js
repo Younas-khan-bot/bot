@@ -17,7 +17,8 @@ module.exports = {
   // the owner can approve hosts from the admin dashboard without any DB surgery.
   // Defaults to the app owner's email so it works even without setting the env.
   adminEmail: (process.env.ADMIN_EMAIL || 'younasmalik787898@gmail.com').toLowerCase(),
-  hostPayoutPercent: parseInt(process.env.HOST_PAYOUT_PERCENT || '70', 10),
+  // Chamet-style split: host earns 60% of coins spent, platform keeps 40%.
+  hostPayoutPercent: parseInt(process.env.HOST_PAYOUT_PERCENT || '60', 10),
   googlePlayPackageName: process.env.GOOGLE_PLAY_PACKAGE_NAME || '',
   googleServiceAccountJsonPath: process.env.GOOGLE_SERVICE_ACCOUNT_JSON_PATH || '',
   skipIapVerification: (process.env.SKIP_IAP_VERIFICATION || 'false').toLowerCase() === 'true',

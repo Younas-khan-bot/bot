@@ -34,6 +34,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [callingHostId, setCallingHostId] = useState<string | null>(null);
   const [tab, setTab] = useState<(typeof TABS)[number]>('Popular');
   const [lang, setLang] = useState<(typeof LANGS)[number]>('All');
+  const [onlineOnly, setOnlineOnly] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -41,7 +42,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   const loadHosts = useCallback(async () => {
     try {
-      const params: Record<string, string> = { online: 'false' };
+      const params: Record<string, string> = { online: onlineOnly ? 'true' : 'false' };
       if (tab === 'New') params.sort = 'new';
       if (lang !== 'All') params.language = lang;
       const res = await apiClient.get('/hosts/', { params });
@@ -52,7 +53,7 @@ export default function HomeScreen({ navigation }: Props) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [tab, lang]);
+  }, [tab, lang, onlineOnly]);
 
   useFocusEffect(
     useCallback(() => {
@@ -120,6 +121,9 @@ export default function HomeScreen({ navigation }: Props) {
       {/* Language filter chips */}
       <View style={styles.chipsWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          <TouchableOpacity onPress={() => setOnlineOnly((v) => !v)}>
+            <Text style={[styles.onlineChip, onlineOnly && styles.onlineChipActive]}>🟢 Online</Text>
+          </TouchableOpacity>
           {LANGS.map((l) => (
             <TouchableOpacity key={l} onPress={() => setLang(l)}>
               <Text style={[styles.chip, lang === l && styles.chipActive]}>{l}</Text>
@@ -238,6 +242,17 @@ const styles = StyleSheet.create({
   chips: { paddingHorizontal: 16, gap: 18, alignItems: 'center' },
   chip: { color: '#8b8b9a', fontSize: 15, fontWeight: '600' },
   chipActive: { color: '#fff', fontWeight: '800' },
+  onlineChip: {
+    color: '#8b8b9a',
+    fontSize: 13,
+    fontWeight: '700',
+    borderWidth: 1,
+    borderColor: '#33334a',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  onlineChipActive: { color: '#22c55e', borderColor: '#22c55e' },
   empty: { color: '#8b8b9a', textAlign: 'center', marginTop: 60, paddingHorizontal: 30, lineHeight: 20 },
   bottomNav: {
     position: 'absolute',

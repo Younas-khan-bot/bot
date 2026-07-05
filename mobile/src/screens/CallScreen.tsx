@@ -12,6 +12,7 @@ import {
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { showModerationMenu } from '../api/moderation';
+import CallChat from '../components/CallChat';
 import type { AppStackParamList } from '../navigation/RootNavigator';
 import { IceServer } from '../types';
 
@@ -32,6 +33,7 @@ export default function CallScreen({ route, navigation }: Props) {
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [micEnabled, setMicEnabled] = useState(true);
   const [camEnabled, setCamEnabled] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const endedRef = useRef(false);
@@ -282,6 +284,9 @@ export default function CallScreen({ route, navigation }: Props) {
         <TouchableOpacity style={styles.controlButton} onPress={toggleMic}>
           <Text style={styles.controlIcon}>{micEnabled ? '🎤' : '🔇'}</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.controlButton} onPress={() => setChatOpen((v) => !v)}>
+          <Text style={styles.controlIcon}>💬</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.controlButton, styles.endButton]}
           onPress={() => endCall()}>
@@ -291,6 +296,13 @@ export default function CallScreen({ route, navigation }: Props) {
           <Text style={styles.controlIcon}>{camEnabled ? '📷' : '🚫'}</Text>
         </TouchableOpacity>
       </View>
+
+      <CallChat
+        socket={socket}
+        callId={callId}
+        visible={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
     </View>
   );
 }

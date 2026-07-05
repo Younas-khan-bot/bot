@@ -12,6 +12,10 @@ function serializeHost(hostProfile) {
     displayName: hostProfile.user.displayName,
     avatarUrl: hostProfile.user.avatarUrl,
     bio: hostProfile.bio,
+    country: hostProfile.country,
+    age: hostProfile.age,
+    gender: hostProfile.gender,
+    language: hostProfile.language,
     ratePerMinute: hostProfile.ratePerMinute,
     isOnline: hostProfile.isOnline,
   };
@@ -19,7 +23,9 @@ function serializeHost(hostProfile) {
 
 // Public-ish list of approved, online hosts available for a call.
 router.get('/', requireAuth, async (req, res) => {
-  const onlineOnly = req.query.online !== 'false';
+  const onlineOnly = req.query.online === 'true'; // default: show all approved hosts
+  const language = req.query.language; // optional filter chip: Arabic, Spanish, ...
+  const sort = req.query.sort; // 'new' | 'popular' (default)
   // Hide hosts the caller has blocked (or who blocked the caller), in either
   // direction, so blocked users never surface to each other.
   const blocked = await blockedUserIdsFor(req.user.id);
@@ -27,10 +33,14 @@ router.get('/', requireAuth, async (req, res) => {
     where: {
       isApproved: true,
       ...(onlineOnly ? { isOnline: true } : {}),
+      ...(language && language !== 'All' ? { language } : {}),
       ...(blocked.size ? { userId: { notIn: [...blocked] } } : {}),
     },
     include: { user: true },
-    orderBy: { updatedAt: 'desc' },
+    orderBy:
+      sort === 'new'
+        ? { createdAt: 'desc' }
+        : [{ isOnline: 'desc' }, { totalEarnedCoins: 'desc' }, { updatedAt: 'desc' }],
     take: 100,
   });
   res.json({ hosts: hosts.map(serializeHost) });
@@ -42,20 +52,35 @@ router.get('/', requireAuth, async (req, res) => {
 // reviewers and payment processors scrutinize for abuse.
 const becomeHostSchema = z.object({
   bio: z.string().max(500).optional(),
+  country: z.string().max(60).optional(),
+  age: z.number().int().min(18).max(99).optional(),
+  gender: z.string().max(20).optional(),
+  language: z.string().max(30).optional(),
   ratePerMinute: z.number().int().min(1).max(10000).optional(),
 });
 
 router.post('/apply', requireAuth, async (req, res, next) => {
   try {
-    const { bio, ratePerMinute } = becomeHostSchema.parse(req.body || {});
+    const { bio, country, age, gender, language, ratePerMinute } = becomeHostSchema.parse(
+      req.body || {},
+    );
+
+    const fields = {
+      bio,
+      country,
+      age,
+      gender,
+      language,
+      ...(ratePerMinute ? { ratePerMinute } : {}),
+    };
 
     const hostProfile = await prisma.hostProfile.upsert({
       where: { userId: req.user.id },
-      update: { bio, ...(ratePerMinute ? { ratePerMinute } : {}) },
+      update: fields,
       create: {
         userId: req.user.id,
-        bio,
         ratePerMinute: ratePerMinute || 10,
+        ...fields,
       },
     });
 

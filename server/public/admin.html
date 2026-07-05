@@ -183,6 +183,7 @@
         return '<div class="card"><div class="row"><div>' +
           '<div class="name">' + esc(h.user.displayName) + '</div>' +
           '<div class="muted">' + esc(h.user.email) + '</div>' +
+          '<div class="muted">' + [h.country, h.age, h.language].filter(Boolean).map(esc).join(' · ') + '</div>' +
           (h.bio ? '<div class="muted">“' + esc(h.bio) + '”</div>' : '') +
           '<div class="rate">🪙 ' + h.ratePerMinute + '/min</div>' +
           '</div><div style="white-space:nowrap">' +

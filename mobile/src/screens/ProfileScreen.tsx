@@ -19,6 +19,9 @@ import type { AppStackParamList } from '../navigation/RootNavigator';
 
 interface HostProfile {
   bio: string | null;
+  country: string | null;
+  age: number | null;
+  language: string | null;
   ratePerMinute: number;
   isOnline: boolean;
   isApproved: boolean;
@@ -33,6 +36,9 @@ export default function ProfileScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [bio, setBio] = useState('');
   const [rate, setRate] = useState('10');
+  const [country, setCountry] = useState('');
+  const [age, setAge] = useState('');
+  const [language, setLanguage] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -40,8 +46,12 @@ export default function ProfileScreen({ navigation }: Props) {
       const res = await apiClient.get('/hosts/me');
       setHostProfile(res.data.hostProfile);
       if (res.data.hostProfile) {
-        setBio(res.data.hostProfile.bio ?? '');
-        setRate(String(res.data.hostProfile.ratePerMinute));
+        const hp = res.data.hostProfile;
+        setBio(hp.bio ?? '');
+        setRate(String(hp.ratePerMinute));
+        setCountry(hp.country ?? '');
+        setAge(hp.age ? String(hp.age) : '');
+        setLanguage(hp.language ?? '');
       }
     } catch (err) {
       Alert.alert('Error', apiErrorMessage(err));
@@ -58,7 +68,11 @@ export default function ProfileScreen({ navigation }: Props) {
     setSaving(true);
     try {
       const ratePerMinute = parseInt(rate, 10);
-      await apiClient.post('/hosts/apply', { bio, ratePerMinute });
+      const payload: Record<string, unknown> = { bio, ratePerMinute };
+      if (country.trim()) payload.country = country.trim();
+      if (age.trim()) payload.age = parseInt(age, 10);
+      if (language.trim()) payload.language = language.trim();
+      await apiClient.post('/hosts/apply', payload);
       await load();
       Alert.alert(
         'Application submitted',
@@ -132,6 +146,30 @@ export default function ProfileScreen({ navigation }: Props) {
         placeholderTextColor="#8b8b9a"
         value={bio}
         onChangeText={setBio}
+      />
+      <View style={styles.rowInputs}>
+        <TextInput
+          style={[styles.input, styles.half]}
+          placeholder="Country (e.g. Egypt)"
+          placeholderTextColor="#8b8b9a"
+          value={country}
+          onChangeText={setCountry}
+        />
+        <TextInput
+          style={[styles.input, styles.half]}
+          placeholder="Age"
+          placeholderTextColor="#8b8b9a"
+          keyboardType="number-pad"
+          value={age}
+          onChangeText={setAge}
+        />
+      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Language (Arabic, Spanish, Asian, English, Europe)"
+        placeholderTextColor="#8b8b9a"
+        value={language}
+        onChangeText={setLanguage}
       />
       <TextInput
         style={styles.input}
@@ -216,6 +254,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10,
   },
+  rowInputs: { flexDirection: 'row', gap: 10 },
+  half: { flex: 1 },
   button: {
     backgroundColor: '#6d28d9',
     borderRadius: 10,

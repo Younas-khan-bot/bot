@@ -14,6 +14,10 @@ export interface Host {
   displayName: string;
   avatarUrl?: string | null;
   bio?: string | null;
+  country?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  language?: string | null;
   ratePerMinute: number;
   isOnline: boolean;
 }

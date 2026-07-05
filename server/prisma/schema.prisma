@@ -101,6 +101,10 @@ model HostProfile {
   userId           String   @unique
   user             User     @relation(fields: [userId], references: [id])
   bio              String?
+  country          String?
+  age              Int?
+  gender           String?
+  language         String?  // e.g. Arabic, Spanish, Asian, English, Europe
   ratePerMinute    Int      @default(10)
   isOnline         Boolean  @default(false)
   isApproved       Boolean  @default(false)

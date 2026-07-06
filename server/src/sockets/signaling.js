@@ -2,6 +2,7 @@ const { verifyToken } = require('../utils/jwt');
 const { prisma } = require('../db');
 const { applyCoinDelta } = require('../services/coinLedger');
 const { blockedUserIdsFor } = require('../routes/moderation.routes');
+const { getGift } = require('../config/gifts');
 const { getIceServers } = require('./iceServers');
 const env = require('../env');
 
@@ -226,6 +227,58 @@ function registerSignaling(io) {
 
     socket.on('call:end', async ({ callId }) => {
       await endCall(io, callId, 'ENDED_BY_USER');
+    });
+
+    // Send a virtual gift during a call. Coins move from sender to the other
+    // participant (host earns the platform's host-payout share), and both
+    // clients get a 'gift:received' event to animate it.
+    socket.on('gift:send', async ({ callId, giftId }, ack) => {
+      try {
+        const active = activeCalls.get(callId);
+        if (!active) return ack?.({ error: 'Call is not active' });
+
+        const gift = getGift(giftId);
+        if (!gift) return ack?.({ error: 'Unknown gift' });
+
+        const senderId = socket.userId;
+        const recipientId = active.callerId === senderId ? active.hostId : active.callerId;
+        const hostShare = Math.floor((gift.coins * env.hostPayoutPercent) / 100);
+
+        const senderResult = await applyCoinDelta({
+          userId: senderId,
+          amount: -gift.coins,
+          type: 'CALL_SPEND',
+          callId,
+          metadata: { gift: giftId },
+        });
+
+        await applyCoinDelta({
+          userId: recipientId,
+          amount: hostShare,
+          type: 'CALL_EARN',
+          callId,
+          metadata: { gift: giftId },
+        });
+
+        await prisma.hostProfile
+          .update({
+            where: { userId: recipientId },
+            data: { totalEarnedCoins: { increment: hostShare } },
+          })
+          .catch(() => {}); // recipient may not be a host; ignore
+
+        io.to(callRoom(callId)).emit('gift:received', {
+          callId,
+          giftId,
+          emoji: gift.emoji,
+          name: gift.name,
+          fromUserId: senderId,
+        });
+
+        ack?.({ ok: true, coinBalance: senderResult.wallet.coinBalance });
+      } catch (err) {
+        ack?.({ error: err.publicMessage || 'Could not send gift' });
+      }
     });
 
     // In-call text chat. Relayed to the other participant, who live-translates

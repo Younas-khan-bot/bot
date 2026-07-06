@@ -13,6 +13,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { showModerationMenu } from '../api/moderation';
 import CallChat from '../components/CallChat';
+import CallGifts from '../components/CallGifts';
 import type { AppStackParamList } from '../navigation/RootNavigator';
 import { IceServer } from '../types';
 
@@ -34,6 +35,7 @@ export default function CallScreen({ route, navigation }: Props) {
   const [micEnabled, setMicEnabled] = useState(true);
   const [camEnabled, setCamEnabled] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [giftsOpen, setGiftsOpen] = useState(false);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const endedRef = useRef(false);
@@ -288,6 +290,11 @@ export default function CallScreen({ route, navigation }: Props) {
           <Text style={styles.controlIcon}>💬</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.controlButton, styles.giftButton]}
+          onPress={() => setGiftsOpen((v) => !v)}>
+          <Text style={styles.controlIcon}>🎁</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.controlButton, styles.endButton]}
           onPress={() => endCall()}>
           <Text style={styles.controlIcon}>📞</Text>
@@ -302,6 +309,13 @@ export default function CallScreen({ route, navigation }: Props) {
         callId={callId}
         visible={chatOpen}
         onClose={() => setChatOpen(false)}
+      />
+
+      <CallGifts
+        socket={socket}
+        callId={callId}
+        visible={giftsOpen}
+        onClose={() => setGiftsOpen(false)}
       />
     </View>
   );
@@ -349,16 +363,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 24,
+    gap: 14,
   },
   controlButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     backgroundColor: '#2f2f45',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  giftButton: { backgroundColor: '#be185d' },
   endButton: { backgroundColor: '#dc2626', transform: [{ rotate: '135deg' }] },
   controlIcon: { fontSize: 26 },
 });

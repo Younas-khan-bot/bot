@@ -17,6 +17,7 @@ const withdrawalsRoutes = require('./routes/withdrawals.routes');
 const moderationRoutes = require('./routes/moderation.routes');
 const translateRoutes = require('./routes/translate.routes');
 const usersRoutes = require('./routes/users.routes');
+const giftsRoutes = require('./routes/gifts.routes');
 
 const app = express();
 // Disable Helmet's default Content-Security-Policy: it sets `script-src 'self'`
@@ -58,6 +59,7 @@ app.use('/withdrawals', withdrawalsRoutes);
 app.use('/moderation', moderationRoutes);
 app.use('/translate', translateRoutes);
 app.use('/users', usersRoutes);
+app.use('/gifts', giftsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

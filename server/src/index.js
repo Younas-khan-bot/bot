@@ -37,6 +37,13 @@ app.get('/StarCallLive.apk', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'StarCallLive.apk'));
 });
 
+// The signed AAB to upload to Google Play Console (owner downloads on desktop).
+app.get('/StarCallLive.aab', (req, res) => {
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', 'attachment; filename="StarCallLive.aab"');
+  res.sendFile(path.join(__dirname, '..', 'public', 'StarCallLive.aab'));
+});
+
 // Static pages served straight from the API: legal pages + the admin dashboard.
 //   /privacy.html   /terms.html   /admin.html
 // HTML is served with no-cache so dashboard updates always load fresh (avoids

@@ -1,0 +1,4 @@
+
+# Large build artifacts (served from server/public instead)
+/releases/*.apk
+/releases/*.aab
